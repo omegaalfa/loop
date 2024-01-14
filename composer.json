@@ -3,6 +3,7 @@
     "description": "PHP Event Loop with Deferred Tasks and Timers using Fibers",
     "version": "1.0.0",
     "license": "MIT",
+    "keywords": ["event-loop", "asynchronous", "Fibers"],
     "authors": [
         {
             "name": "wrt",
