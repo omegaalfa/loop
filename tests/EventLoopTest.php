@@ -1,52 +1,71 @@
 <?php
 
-namespace omegaalfa\Tests;
-
-use omegaalfa\EventLoop\EventLoop;
 use PHPUnit\Framework\TestCase;
+use omegaalfa\EventLoop\EventLoop;
 
 class EventLoopTest extends TestCase
 {
-    public function testDefer(): void
-    {
-        $loop = new EventLoop();
-        $flag = false;
 
-        $loop->defer(function () use (&$flag) {
-            $flag = true;
-        });
+	public function testDefer(): void
+	{
+		$loop = new EventLoop();
 
-        $loop->run();
+		$value = 'Hello, world!';
+		$loop->defer(function() use ($value) {
+			$this->assertEquals($value, 'Hello, world!');
+		});
 
-        $this->assertTrue($flag);
-    }
+		$loop->run();
+	}
 
-    public function testSetTimeOut(): void
-    {
-        $loop = new EventLoop();
-        $flag = false;
+	public function testSetTimeout(): void
+	{
+		$loop = new EventLoop();
 
-        $loop->setTimeOut(1, function () use (&$flag) {
-            $flag = true;
-        });
+		$value = 'Hello, world!';
+		$loop->setTimeout(1, function() use ($value) {
+			$this->assertEquals($value, 'Hello, world!');
+		});
 
-        $loop->run();
+		$loop->run();
+	}
 
-        $this->assertTrue($flag);
-    }
+	public function testAddTimer(): void
+	{
+		$loop = new EventLoop();
 
-    public function testAddTimer(): void
-    {
-        $loop = new EventLoop();
-        $flag = false;
+		$value = 'Hello, world!';
+		$loop->addTimer(1, function() use ($value) {
+			$this->assertEquals($value, 'Hello, world!');
+		});
 
-        $loop->addTimer(1, function () use (&$flag) {
-            $flag = true;
-        });
+		$loop->run();
+	}
 
-        $loop->run();
+	public function testSleep(): void
+	{
+		$loop = new EventLoop();
 
-        $this->assertTrue($flag);
-    }
+		$start = microtime(true);
+		$loop->sleep(1);
+		$end = microtime(true);
 
+		$this->assertGreaterThanOrEqual($start + 1, $end);
+	}
+
+	public function testRun(): void
+	{
+		$loop = new EventLoop();
+
+		$value = 'Hello, world!';
+		$loop->defer(function() use ($value) {
+			$this->assertEquals($value, 'Hello, world!');
+		});
+
+		$loop->setTimeout(1, function() use ($value) {
+			$this->assertEquals($value, 'Hello, world!');
+		});
+
+		$loop->run();
+	}
 }
