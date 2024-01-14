@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace omegaalfa\Event;
+namespace omegaalfa\EventLoop;
 
 use Fiber;
 use Throwable;
