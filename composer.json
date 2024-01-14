@@ -15,7 +15,7 @@
     },
     "autoload": {
         "psr-4": {
-            "omegaalfa\\Event\\": "src/"
+            "omegaalfa\\EventLoop\\": "src/"
         }
     },
     "minimum-stability": "dev",
