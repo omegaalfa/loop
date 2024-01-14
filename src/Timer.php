@@ -41,7 +41,7 @@ class Timer
 	 *
 	 * @return void
 	 */
-	public function sleep(float $seconds, callable $callback): void
+	public function repeat(float $seconds, callable $callback): void
 	{
 		$stop = microtime(true) + $seconds;
 		for($i = 0; microtime(true) < $stop; $i++) {
