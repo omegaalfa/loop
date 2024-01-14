@@ -1,6 +1,6 @@
 <?php
 
-namespace omegaalfa\AsyncTask;
+namespace omegaalfa\Event;
 
 use Fiber;
 use Throwable;
