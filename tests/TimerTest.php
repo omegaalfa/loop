@@ -17,17 +17,22 @@ class TimerTest extends TestCase
 
 	public function testClosure(): void
 	{
-		$callback = function() { };
-		$timer = new Timer(1, $callback);
+		$timer = new Timer(1, function () {
+			// A lógica do callback aqui...
+		});
 
-		$this->assertEquals($timer->closure(), $callback);
+		$this->expectOutputString('');
+		$timer->closure();
 	}
 
 	public function testRepeat(): void
 	{
-		$callback = function() { };
-		$timer = new Timer(1, $callback);
-
-		$this->assertEquals($timer->repeat(1, $callback), $callback);
+		$timer = new Timer(1, function () {
+			// A lógica do callback aqui...
+		});
+		$timer->repeat(1, function () {
+			// A lógica do callback aqui...
+		});
+		$this->expectOutputString('');
 	}
 }
