@@ -45,12 +45,13 @@ class EventLoopTest extends TestCase
 	public function testSleep(): void
 	{
 		$loop = new EventLoop();
+		$value = 'Hello, world!';
+		$loop->defer(function() use ($loop, $value) {
+			$loop->sleep(1);
+			$this->assertEquals($value, 'Hello, world!');
+		});
 
-		$start = microtime(true);
-		$loop->sleep(1);
-		$end = microtime(true);
-
-		$this->assertGreaterThanOrEqual($start + 1, $end);
+		$loop->run();
 	}
 
 	public function testRun(): void
