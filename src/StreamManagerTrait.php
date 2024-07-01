@@ -13,12 +13,14 @@ trait StreamManagerTrait
 	 * @param  resource  $stream
 	 * @param  callable  $callback
 	 * @param  int       $length
+	 * @param  bool      $blocking
 	 *
 	 * @return void
 	 * @throws Throwable
 	 */
-	protected function streamRead($stream, callable $callback, int $length): void
+	protected function streamRead($stream, callable $callback, int $length, bool $blocking = false): void
 	{
+		stream_set_blocking($stream, $blocking);
 		while(!feof($stream)) {
 			$read = [$stream];
 			$write = null;
@@ -50,16 +52,17 @@ trait StreamManagerTrait
 	 * @param  resource  $stream
 	 * @param  string    $data
 	 * @param  callable  $callback
+	 * @param  bool      $blocking
 	 *
 	 * @return void
 	 */
-	protected function streamWrite($stream, string $data, callable $callback): void
+	protected function streamWrite($stream, string $data, callable $callback, bool $blocking = false): void
 	{
 		$write = [$stream];
 		$read = null;
 		$except = null;
 		$hasWritable = false;
-
+		stream_set_blocking($stream, $blocking);
 		while(!$hasWritable) {
 			$ready = stream_select($read, $write, $except, 0, 10000);
 
@@ -84,11 +87,12 @@ trait StreamManagerTrait
 	 * @param  string    $filename
 	 * @param  callable  $callback
 	 * @param  int       $length
+	 * @param  bool      $blocking
 	 *
 	 * @return void
 	 * @throws Throwable
 	 */
-	protected function streamReadFileNonBlocking(string $filename, callable $callback, int $length): void
+	protected function streamReadFileNonBlocking(string $filename, callable $callback, int $length, bool $blocking): void
 	{
 		$stream = fopen($filename, 'rb');
 		if(!$stream) {
@@ -96,8 +100,7 @@ trait StreamManagerTrait
 			return;
 		}
 
-		stream_set_blocking($stream, true);
-		$this->streamRead($stream, $callback, $length);
+		$this->streamRead($stream, $callback, $length, $blocking);
 	}
 
 }
