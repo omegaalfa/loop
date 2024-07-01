@@ -13,7 +13,7 @@ class Loop
 	use StreamManagerTrait;
 
 	/**
-	 * @var array<int, Fiber>
+	 * @var array<int, Fiber<int, mixed, mixed, mixed>>
 	 */
 	protected array $callables = [];
 
@@ -53,18 +53,17 @@ class Loop
 	}
 
 	/**
-	 * @param             $stream
-	 * @param  string     $data
-	 * @param  callable   $callback
-	 * @param  float|int  $timeout
+	 * @param  resource  $stream
+	 * @param  string    $data
+	 * @param  callable  $callback
 	 *
 	 * @return void
 	 */
-	public function addWriteStream($stream, string $data, callable $callback, float|int $timeout = 0.5): void
+	public function addWriteStream($stream, string $data, callable $callback): void
 	{
 		$this->writeStreams[(int)$stream] = $stream;
-		$this->defer(function() use ($timeout, $stream, $data, $callback) {
-			$this->streamWrite($stream, $data, $callback, $timeout);
+		$this->defer(function() use ($stream, $data, $callback) {
+			$this->streamWrite($stream, $data, $callback);
 		});
 	}
 
@@ -83,31 +82,29 @@ class Loop
 	}
 
 	/**
-	 * @param  callable  $cb
-	 * @param  float     $timeout
+	 * @param  callable   $callback
+	 * @param  float|int  $timeout
 	 *
 	 * @return void
 	 */
-	public function setTimeout(callable $cb, float $timeout): void
+	public function setTimeout(callable $callback, float|int $timeout): void
 	{
-		$triggerTime = microtime(true) + $timeout;
-		$this->timers[] = [$triggerTime, $cb];
-		usort($this->timers, static fn($a, $b) => $a[0] <=> $b[0]);
+		$this->timers[] = new Timer($timeout, $callback);
 	}
 
 	/**
-	 * @param  float     $seconds
-	 * @param  callable  $callback
+	 * @param  int        $number
+	 * @param  float|int  $intervalSecunds
+	 * @param  callable   $callback
 	 *
 	 * @return void
-	 * @throws Throwable
 	 */
-	public function repeat(float $seconds, callable $callback): void
+	public function repeat(int $number, float|int $intervalSecunds, callable $callback): void
 	{
-		$this->defer(function() use ($seconds, $callback) {
-			while(true) {
-				$this->sleep($seconds);
+		$this->defer(function() use ($number, $intervalSecunds, $callback) {
+			for($i = 0; $i < $number; ++$i) {
 				try {
+					$this->sleep($intervalSecunds);
 					$callback();
 				} catch(Throwable $exception) {
 					$this->errors[] = $exception->getMessage();
@@ -128,12 +125,12 @@ class Loop
 
 
 	/**
-	 * @param  float     $seconds
-	 * @param  callable  $callback
+	 * @param  float|int  $seconds
+	 * @param  callable   $callback
 	 *
 	 * @return void
 	 */
-	public function addTimer(float $seconds, callable $callback): void
+	public function addTimer(float|int $seconds, callable $callback): void
 	{
 		$this->defer(function() use ($seconds, $callback) {
 			$this->sleep($seconds);
@@ -142,12 +139,12 @@ class Loop
 	}
 
 	/**
-	 * @param  float  $seconds
+	 * @param  float|int  $seconds
 	 *
 	 * @return void
 	 * @throws Throwable
 	 */
-	public function sleep(float $seconds): void
+	public function sleep(float|int $seconds): void
 	{
 		$stop = microtime(true) + $seconds;
 		for($i = 0; microtime(true) < $stop; $i++) {
@@ -224,8 +221,8 @@ class Loop
 	}
 
 	/**
-	 * @param  int    $id
-	 * @param  Fiber  $fiber
+	 * @param  int                              $id
+	 * @param  Fiber<int, mixed, mixed, mixed>  $fiber
 	 *
 	 * @return mixed
 	 * @throws Throwable
