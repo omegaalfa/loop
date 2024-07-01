@@ -10,9 +10,9 @@ class Timer
 {
 
 	/**
-	 * @var int
+	 * @var int|float
 	 */
-	public int $delay;
+	public int|float $delay;
 
 	/**
 	 * @var callable
@@ -20,10 +20,10 @@ class Timer
 	public $callback;
 
 	/**
-	 * @param  int       $delay
-	 * @param  callable  $callback
+	 * @param  int|float  $delay
+	 * @param  callable   $callback
 	 */
-	public function __construct(int $delay, callable $callback)
+	public function __construct(int|float $delay, callable $callback)
 	{
 		$this->delay = $delay;
 		$this->callback = $callback;
@@ -40,15 +40,15 @@ class Timer
 
 
 	/**
-	 * @param  callable  $callback
-	 * @param  int       $seconds
+	 * @param  callable   $callback
+	 * @param  int|float  $seconds
 	 *
 	 * @return void
-	 * @throws Throwable
 	 */
-	protected function setInterval(callable $callback, int $seconds): void
+	protected function setInterval(callable $callback, int|float $seconds): void
 	{
-		usleep($seconds * 1000000);
+		$microsegunds = (int)$seconds * 1000000;
+		usleep($microsegunds);
 		$callback();
 	}
 }
