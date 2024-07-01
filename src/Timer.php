@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace omegaalfa\EventLoop;
+namespace Omegaalfa\Loop;
+
+use Throwable;
 
 class Timer
 {
@@ -29,35 +31,24 @@ class Timer
 
 	/**
 	 * @return void
+	 * @throws Throwable
 	 */
 	public function closure(): void
 	{
 		$this->setInterval($this->callback, $this->delay);
 	}
 
-	/**
-	 * @param  float     $seconds
-	 * @param  callable  $callback
-	 *
-	 * @return void
-	 */
-	public function repeat(float $seconds, callable $callback): void
-	{
-		$stop = microtime(true) + $seconds;
-		for($i = 0; microtime(true) < $stop; $i++) {
-			$callback();
-		}
-	}
 
 	/**
 	 * @param  callable  $callback
 	 * @param  int       $seconds
 	 *
 	 * @return void
+	 * @throws Throwable
 	 */
 	protected function setInterval(callable $callback, int $seconds): void
 	{
-		sleep($seconds);
+		usleep($seconds * 1000000);
 		$callback();
 	}
 }
