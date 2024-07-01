@@ -40,15 +40,16 @@ class Loop
 	/**
 	 * @param  resource  $stream
 	 * @param  callable  $callback
+	 * @param  bool      $blocking
 	 * @param  int       $length
 	 *
 	 * @return void
 	 */
-	public function addReadStream($stream, callable $callback, int $length = 8192): void
+	public function addReadStream($stream, callable $callback, bool $blocking = false, int $length = 8192): void
 	{
 		$this->readStreams[(int)$stream] = $stream;
-		$this->defer(function() use ($length, $stream, $callback) {
-			$this->streamRead($stream, $callback, $length);
+		$this->defer(function() use ($length, $stream, $callback, $blocking) {
+			$this->streamRead($stream, $callback, $length, $blocking);
 		});
 	}
 
@@ -56,28 +57,30 @@ class Loop
 	 * @param  resource  $stream
 	 * @param  string    $data
 	 * @param  callable  $callback
+	 * @param  bool      $blocking
 	 *
 	 * @return void
 	 */
-	public function addWriteStream($stream, string $data, callable $callback): void
+	public function addWriteStream($stream, string $data, callable $callback, bool $blocking = false): void
 	{
 		$this->writeStreams[(int)$stream] = $stream;
-		$this->defer(function() use ($stream, $data, $callback) {
-			$this->streamWrite($stream, $data, $callback);
+		$this->defer(function() use ($stream, $data, $callback, $blocking) {
+			$this->streamWrite($stream, $data, $callback, $blocking);
 		});
 	}
 
 	/**
 	 * @param  string    $filename
 	 * @param  callable  $callback
+	 * @param  bool      $blocking
 	 * @param  int       $length
 	 *
 	 * @return void
 	 */
-	public function addReadFile(string $filename, callable $callback, int $length = 8192): void
+	public function addReadFile(string $filename, callable $callback, bool $blocking = false, int $length = 8192): void
 	{
-		$this->defer(function() use ($length, $filename, $callback) {
-			$this->streamReadFileNonBlocking($filename, $callback, $length);
+		$this->defer(function() use ($length, $filename, $callback, $blocking) {
+			$this->streamReadFileNonBlocking($filename, $callback, $length, $blocking);
 		});
 	}
 
