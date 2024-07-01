@@ -47,7 +47,7 @@ $loop->addTimer(1.0, function () {
 });
 
 $loop->repeat(number: 5, intervalSecunds: 2, callback: function () {
-		echo "REPEAT\n";
+    echo "REPEAT\n";
 });
 
 // Run the event loop
