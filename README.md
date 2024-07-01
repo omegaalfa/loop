@@ -46,7 +46,7 @@ $loop->addTimer(1.0, function () {
     echo "Timer task executed after 1 second!\n";
 });
 
-$loop->repeat(number: 5, intervalSecunds: 2, callback: function () {
+$loop->repeat(number: 5, intervalSeconds: 2, callback: function () {
     echo "REPEAT\n";
 });
 
