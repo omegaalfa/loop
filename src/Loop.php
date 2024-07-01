@@ -94,17 +94,17 @@ class Loop
 
 	/**
 	 * @param  int        $number
-	 * @param  float|int  $intervalSecunds
+	 * @param  float|int  $intervalSeconds
 	 * @param  callable   $callback
 	 *
 	 * @return void
 	 */
-	public function repeat(int $number, float|int $intervalSecunds, callable $callback): void
+	public function repeat(int $number, float|int $intervalSeconds, callable $callback): void
 	{
-		$this->defer(function() use ($number, $intervalSecunds, $callback) {
+		$this->defer(function() use ($number, $intervalSeconds, $callback) {
 			for($i = 0; $i < $number; ++$i) {
 				try {
-					$this->sleep($intervalSecunds);
+					$this->sleep($intervalSeconds);
 					$callback();
 				} catch(Throwable $exception) {
 					$this->errors[] = $exception->getMessage();
