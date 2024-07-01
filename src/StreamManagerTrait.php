@@ -10,7 +10,7 @@ use Throwable;
 trait StreamManagerTrait
 {
 	/**
-	 * @param            $stream
+	 * @param  resource  $stream
 	 * @param  callable  $callback
 	 * @param  int       $length
 	 *
@@ -24,7 +24,7 @@ trait StreamManagerTrait
 			$write = null;
 			$except = null;
 
-			$ready = stream_select($read, $write, $except, 0);
+			$ready = stream_select($read, $write, $except, 0, 10000);
 
 			if($ready === false) {
 				$this->errors[] = "Error in stream_select";
@@ -33,7 +33,7 @@ trait StreamManagerTrait
 			}
 
 			if($ready > 0) {
-				$data = fread($stream, $length);
+				$data = fread($stream, max(1, $length));
 				if($data !== false) {
 					$callback($data);
 				}
@@ -47,14 +47,13 @@ trait StreamManagerTrait
 
 
 	/**
-	 * @param  resource   $stream
-	 * @param  string     $data
-	 * @param  callable   $callback
-	 * @param  float|int  $timeout
+	 * @param  resource  $stream
+	 * @param  string    $data
+	 * @param  callable  $callback
 	 *
 	 * @return void
 	 */
-	protected function streamWrite($stream, string $data, callable $callback, float|int $timeout = 0.5): void
+	protected function streamWrite($stream, string $data, callable $callback): void
 	{
 		$write = [$stream];
 		$read = null;
@@ -62,7 +61,7 @@ trait StreamManagerTrait
 		$hasWritable = false;
 
 		while(!$hasWritable) {
-			$ready = stream_select($read, $write, $except, 0, $timeout * 1000000);
+			$ready = stream_select($read, $write, $except, 0, 10000);
 
 			if($ready === false) {
 				$this->errors[] = "Error in stream_select";
@@ -72,7 +71,7 @@ trait StreamManagerTrait
 			if($ready > 0) {
 				$hasWritable = true;
 			} else {
-				usleep($timeout * 1000000);
+				usleep(10000);
 			}
 		}
 
@@ -91,14 +90,14 @@ trait StreamManagerTrait
 	 */
 	protected function streamReadFileNonBlocking(string $filename, callable $callback, int $length): void
 	{
-		$file = fopen($filename, 'rb');
-		if(!$file) {
+		$stream = fopen($filename, 'rb');
+		if(!$stream) {
 			$this->errors[] = "Failed to open file: $filename";
 			return;
 		}
 
-		stream_set_blocking($file, 0);
-		$this->streamRead($file, $callback, $length);
+		stream_set_blocking($stream, true);
+		$this->streamRead($stream, $callback, $length);
 	}
 
 }
