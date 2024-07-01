@@ -1,8 +1,8 @@
 {
-    "name": "omegaalfa/event-loop",
-    "description": "PHP Event Loop with Deferred Tasks and Timers using Fibers",
+    "name": "omegaalfa/loop",
+    "description": "PHP Loop with Deferred Tasks and Timers using Fibers",
     "license": "MIT",
-    "keywords": ["event-loop", "asynchronous", "Fibers"],
+    "keywords": ["event-loop", "asynchronous", "Fibers", "Loop"],
     "authors": [
         {
             "name": "wrt",
@@ -14,7 +14,7 @@
     },
     "autoload": {
         "psr-4": {
-            "omegaalfa\\EventLoop\\": "src/"
+            "Omegaalfa\\Loop\\": "src/"
         }
     },
     "minimum-stability": "dev",
