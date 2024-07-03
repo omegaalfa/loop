@@ -27,15 +27,6 @@ class Loop
 	 */
 	protected array $errors = [];
 
-	/**
-	 * @var array<int, resource>
-	 */
-	protected array $readStreams = [];
-
-	/**
-	 * @var array<int, resource>
-	 */
-	protected array $writeStreams = [];
 
 	/**
 	 * @param  resource  $stream
@@ -43,12 +34,11 @@ class Loop
 	 * @param  bool      $blocking
 	 * @param  int       $length
 	 *
-	 * @return void
+	 * @return int
 	 */
-	public function addReadStream($stream, callable $callback, bool $blocking = false, int $length = 8192): void
+	public function addReadStream($stream, callable $callback, bool $blocking = false, int $length = 8192): int
 	{
-		$this->readStreams[(int)$stream] = $stream;
-		$this->defer(function() use ($length, $stream, $callback, $blocking) {
+		return $this->defer(function() use ($length, $stream, $callback, $blocking) {
 			$this->streamRead($stream, $callback, $length, $blocking);
 		});
 	}
@@ -59,12 +49,11 @@ class Loop
 	 * @param  callable  $callback
 	 * @param  bool      $blocking
 	 *
-	 * @return void
+	 * @return int
 	 */
-	public function addWriteStream($stream, string $data, callable $callback, bool $blocking = false): void
+	public function addWriteStream($stream, string $data, callable $callback, bool $blocking = false): int
 	{
-		$this->writeStreams[(int)$stream] = $stream;
-		$this->defer(function() use ($stream, $data, $callback, $blocking) {
+		return $this->defer(function() use ($stream, $data, $callback, $blocking) {
 			$this->streamWrite($stream, $data, $callback, $blocking);
 		});
 	}
@@ -75,11 +64,11 @@ class Loop
 	 * @param  bool      $blocking
 	 * @param  int       $length
 	 *
-	 * @return void
+	 * @return int
 	 */
-	public function addReadFile(string $filename, callable $callback, bool $blocking = false, int $length = 8192): void
+	public function addReadFile(string $filename, callable $callback, bool $blocking = false, int $length = 8192): int
 	{
-		$this->defer(function() use ($length, $filename, $callback, $blocking) {
+		return $this->defer(function() use ($length, $filename, $callback, $blocking) {
 			$this->streamReadFileNonBlocking($filename, $callback, $length, $blocking);
 		});
 	}
@@ -88,11 +77,18 @@ class Loop
 	 * @param  callable   $callback
 	 * @param  float|int  $timeout
 	 *
-	 * @return void
+	 * @return int
 	 */
-	public function setTimeout(callable $callback, float|int $timeout): void
+	public function setTimeout(callable $callback, float|int $timeout): int
 	{
-		$this->timers[] = new Timer($timeout, $callback);
+		sleep($timeout);
+		return $this->defer(function() use ($callback) {
+			try {
+				$callback();
+			} catch(Throwable $exception) {
+				$this->errors[] = $exception->getMessage();
+			}
+		});
 	}
 
 	/**
@@ -100,11 +96,11 @@ class Loop
 	 * @param  float|int  $intervalSeconds
 	 * @param  callable   $callback
 	 *
-	 * @return void
+	 * @return int
 	 */
-	public function repeat(int $number, float|int $intervalSeconds, callable $callback): void
+	public function repeat(int $number, float|int $intervalSeconds, callable $callback): int
 	{
-		$this->defer(function() use ($number, $intervalSeconds, $callback) {
+		return $this->defer(function() use ($number, $intervalSeconds, $callback) {
 			for($i = 0; $i < $number; ++$i) {
 				try {
 					$this->sleep($intervalSeconds);
@@ -116,14 +112,19 @@ class Loop
 		});
 	}
 
+
 	/**
 	 * @param  callable  $callable
 	 *
-	 * @return void
+	 * @return int
 	 */
-	public function defer(callable $callable): void
+	public function defer(callable $callable): int
 	{
-		$this->callables[] = new Fiber($callable);
+		$fiber = new Fiber($callable);
+		$fiberId = spl_object_id($fiber);
+		$this->callables[$fiberId] = $fiber;
+
+		return $fiberId;
 	}
 
 
@@ -131,11 +132,11 @@ class Loop
 	 * @param  float|int  $seconds
 	 * @param  callable   $callback
 	 *
-	 * @return void
+	 * @return int
 	 */
-	public function addTimer(float|int $seconds, callable $callback): void
+	public function addTimer(float|int $seconds, callable $callback): int
 	{
-		$this->defer(function() use ($seconds, $callback) {
+		return $this->defer(function() use ($seconds, $callback) {
 			$this->sleep($seconds);
 			return $callback();
 		});
@@ -178,36 +179,6 @@ class Loop
 		}
 	}
 
-	/**
-	 * @param  int  $id
-	 *
-	 * @return void
-	 */
-	public function cancelTimer(int $id): void
-	{
-		if(isset($this->timers[$id])) {
-			unset($this->timers[$id]);
-		}
-	}
-
-	/**
-	 * @return void
-	 */
-	private function execTimer(): void
-	{
-		$now = microtime(true);
-		foreach($this->timers as $key => $timer) {
-			if($timer->delay <= $now) {
-				try {
-					$timer->closure();
-				} catch(Throwable $exception) {
-					$this->errors[$key] = $exception->getMessage();
-				}
-
-				unset($this->timers[$key]);
-			}
-		}
-	}
 
 	/**
 	 * @return void
@@ -255,11 +226,7 @@ class Loop
 	 */
 	public function run(): void
 	{
-		while(!empty($this->callables) || !empty($this->timers)) {
-			if(!empty($this->timers)) {
-				$this->execTimer();
-			}
-
+		while(!empty($this->callables)) {
 			$this->execCallables();
 		}
 	}
