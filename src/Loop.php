@@ -39,7 +39,11 @@ class Loop
 	public function addReadStream($stream, callable $callback, bool $blocking = false, int $length = 8192): int
 	{
 		return $this->defer(function() use ($length, $stream, $callback, $blocking) {
-			$this->streamRead($stream, $callback, $length, $blocking);
+			try {
+				$this->streamRead($stream, $callback, $length, $blocking);
+			} catch(Throwable $exception) {
+				$this->errors[] = $exception->getMessage();
+			}
 		});
 	}
 
@@ -54,7 +58,11 @@ class Loop
 	public function addWriteStream($stream, string $data, callable $callback, bool $blocking = false): int
 	{
 		return $this->defer(function() use ($stream, $data, $callback, $blocking) {
-			$this->streamWrite($stream, $data, $callback, $blocking);
+			try {
+				$this->streamWrite($stream, $data, $callback, $blocking);
+			} catch(Throwable $exception) {
+				$this->errors[] = $exception->getMessage();
+			}
 		});
 	}
 
@@ -69,7 +77,11 @@ class Loop
 	public function addReadFile(string $filename, callable $callback, bool $blocking = false, int $length = 8192): int
 	{
 		return $this->defer(function() use ($length, $filename, $callback, $blocking) {
-			$this->streamReadFileNonBlocking($filename, $callback, $length, $blocking);
+			try {
+				$this->streamReadFileNonBlocking($filename, $callback, $length, $blocking);
+			} catch(Throwable $exception) {
+				$this->errors[] = $exception->getMessage();
+			}
 		});
 	}
 
@@ -92,22 +104,29 @@ class Loop
 	}
 
 	/**
-	 * @param  int        $number
 	 * @param  float|int  $intervalSeconds
 	 * @param  callable   $callback
+	 * @param  int|null   $number
 	 *
 	 * @return int
 	 */
-	public function repeat(int $number, float|int $intervalSeconds, callable $callback): int
+	public function repeat(float|int $intervalSeconds, callable $callback, int|null $number = null): int
 	{
 		return $this->defer(function() use ($number, $intervalSeconds, $callback) {
-			for($i = 0; $i < $number; ++$i) {
-				try {
+			try {
+				if(is_int($number) && $number > 0) {
+					for($i = 0; $i < $number; ++$i) {
+						$this->sleep($intervalSeconds);
+						$callback();
+					}
+					return;
+				}
+				for(; ;) {
 					$this->sleep($intervalSeconds);
 					$callback();
-				} catch(Throwable $exception) {
-					$this->errors[] = $exception->getMessage();
 				}
+			} catch(Throwable $exception) {
+				$this->errors[] = $exception->getMessage();
 			}
 		});
 	}
