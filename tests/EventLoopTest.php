@@ -6,67 +6,69 @@ use omegaalfa\EventLoop\EventLoop;
 class EventLoopTest extends TestCase
 {
 
-	public function testDefer(): void
+	protected Loop $loop;
+
+	protected function setUp(): void
 	{
-		$loop = new EventLoop();
-
-		$value = 'Hello, world!';
-		$loop->defer(function() use ($value) {
-			$this->assertEquals($value, 'Hello, world!');
-		});
-
-		$loop->run();
+		$this->loop = new Loop();
 	}
+
 
 	public function testSetTimeout(): void
 	{
-		$loop = new EventLoop();
+		$called = false;
+		$this->loop->setTimeout(function() use (&$called) {
+			$called = true;
+		}, 0.1);
 
-		$value = 'Hello, world!';
-		$loop->setTimeout(1, function() use ($value) {
-			$this->assertEquals($value, 'Hello, world!');
+		$this->loop->run();
+		$this->assertTrue($called);
+	}
+
+	public function testRepeat(): void
+	{
+		$counter = 0;
+		$this->loop->repeat(0.1, function() use (&$counter) {
+			$counter++;
+		}, 3);
+
+		$this->loop->run();
+		$this->assertEquals(3, $counter);
+	}
+
+	public function testDefer(): void
+	{
+		$called = false;
+		$this->loop->defer(function() use (&$called) {
+			$called = true;
 		});
 
-		$loop->run();
+		$this->loop->run();
+		$this->assertTrue($called);
 	}
 
 	public function testAddTimer(): void
 	{
-		$loop = new EventLoop();
-
-		$value = 'Hello, world!';
-		$loop->addTimer(1, function() use ($value) {
-			$this->assertEquals($value, 'Hello, world!');
+		$called = false;
+		$this->loop->addTimer(0.1, function() use (&$called) {
+			$called = true;
 		});
 
-		$loop->run();
+		$this->loop->run();
+		$this->assertTrue($called);
 	}
+	
 
-	public function testSleep(): void
+	public function testCancel(): void
 	{
-		$loop = new EventLoop();
-		$value = 'Hello, world!';
-		$loop->defer(function() use ($loop, $value) {
-			$loop->sleep(1);
-			$this->assertEquals($value, 'Hello, world!');
+		$called = false;
+		$id = $this->loop->defer(function() use (&$called) {
+			$called = true;
 		});
 
-		$loop->run();
-	}
+		$this->loop->cancel($id);
+		$this->loop->run();
 
-	public function testRun(): void
-	{
-		$loop = new EventLoop();
-
-		$value = 'Hello, world!';
-		$loop->defer(function() use ($value) {
-			$this->assertEquals($value, 'Hello, world!');
-		});
-
-		$loop->setTimeout(1, function() use ($value) {
-			$this->assertEquals($value, 'Hello, world!');
-		});
-
-		$loop->run();
+		$this->assertFalse($called);
 	}
 }
