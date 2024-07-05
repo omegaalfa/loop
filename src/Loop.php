@@ -93,7 +93,8 @@ class Loop
 	 */
 	public function setTimeout(callable $callback, float|int $timeout): int
 	{
-		sleep($timeout);
+		$microsegunds = (int)$timeout * 1000000;
+		usleep($microsegunds);
 		return $this->defer(function() use ($callback) {
 			try {
 				$callback();
