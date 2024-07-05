@@ -1,7 +1,7 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
-use omegaalfa\EventLoop\EventLoop;
+use Omegaalfa\Loop\Loop;
 
 class EventLoopTest extends TestCase
 {
