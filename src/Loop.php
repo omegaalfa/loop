@@ -7,6 +7,7 @@ namespace Omegaalfa\Loop;
 
 use Fiber;
 use Throwable;
+use Omegaalfa\Loop\traits\StreamManagerTrait;
 
 class Loop
 {
@@ -17,10 +18,6 @@ class Loop
 	 */
 	protected array $callables = [];
 
-	/**
-	 * @var array<int, Timer>
-	 */
-	protected array $timers = [];
 
 	/**
 	 * @var array<int, string>
@@ -38,10 +35,10 @@ class Loop
 	 */
 	public function addReadStream($stream, callable $callback, bool $blocking = false, int $length = 8192): int
 	{
-		return $this->defer(function() use ($length, $stream, $callback, $blocking) {
+		return $this->defer(function () use ($length, $stream, $callback, $blocking) {
 			try {
 				$this->streamRead($stream, $callback, $length, $blocking);
-			} catch(Throwable $exception) {
+			} catch (Throwable $exception) {
 				$this->errors[] = $exception->getMessage();
 			}
 		});
@@ -57,10 +54,10 @@ class Loop
 	 */
 	public function addWriteStream($stream, string $data, callable $callback, bool $blocking = false): int
 	{
-		return $this->defer(function() use ($stream, $data, $callback, $blocking) {
+		return $this->defer(function () use ($stream, $data, $callback, $blocking) {
 			try {
 				$this->streamWrite($stream, $data, $callback, $blocking);
-			} catch(Throwable $exception) {
+			} catch (Throwable $exception) {
 				$this->errors[] = $exception->getMessage();
 			}
 		});
@@ -76,10 +73,10 @@ class Loop
 	 */
 	public function addReadFile(string $filename, callable $callback, bool $blocking = false, int $length = 8192): int
 	{
-		return $this->defer(function() use ($length, $filename, $callback, $blocking) {
+		return $this->defer(function () use ($length, $filename, $callback, $blocking) {
 			try {
-				$this->streamReadFileNonBlocking($filename, $callback, $length, $blocking);
-			} catch(Throwable $exception) {
+				$this->streamReadFile($filename, $callback, $length, $blocking);
+			} catch (Throwable $exception) {
 				$this->errors[] = $exception->getMessage();
 			}
 		});
@@ -93,12 +90,12 @@ class Loop
 	 */
 	public function setTimeout(callable $callback, float|int $timeout): int
 	{
-		$microsegunds = (int)$timeout * 1000000;
-		usleep($microsegunds);
-		return $this->defer(function() use ($callback) {
+		$microsecounds = (int)$timeout * 1000000;
+		usleep($microsecounds);
+		return $this->defer(function () use ($callback) {
 			try {
 				$callback();
-			} catch(Throwable $exception) {
+			} catch (Throwable $exception) {
 				$this->errors[] = $exception->getMessage();
 			}
 		});
@@ -113,20 +110,20 @@ class Loop
 	 */
 	public function repeat(float|int $intervalSeconds, callable $callback, int|null $number = null): int
 	{
-		return $this->defer(function() use ($number, $intervalSeconds, $callback) {
+		return $this->defer(function () use ($number, $intervalSeconds, $callback) {
 			try {
-				if(is_int($number) && $number > 0) {
-					for($i = 0; $i < $number; ++$i) {
+				if (is_int($number) && $number > 0) {
+					for ($i = 0; $i < $number; ++$i) {
 						$this->sleep($intervalSeconds);
 						$callback();
 					}
 					return;
 				}
-				for(; ;) {
+				for (;;) {
 					$this->sleep($intervalSeconds);
 					$callback();
 				}
-			} catch(Throwable $exception) {
+			} catch (Throwable $exception) {
 				$this->errors[] = $exception->getMessage();
 			}
 		});
@@ -156,7 +153,7 @@ class Loop
 	 */
 	public function addTimer(float|int $seconds, callable $callback): int
 	{
-		return $this->defer(function() use ($seconds, $callback) {
+		return $this->defer(function () use ($seconds, $callback) {
 			$this->sleep($seconds);
 			return $callback();
 		});
@@ -171,7 +168,7 @@ class Loop
 	public function sleep(float|int $seconds): void
 	{
 		$stop = microtime(true) + $seconds;
-		for($i = 0; microtime(true) < $stop; $i++) {
+		while (microtime(true) < $stop) {
 			$this->next();
 		}
 	}
@@ -182,7 +179,7 @@ class Loop
 	 * @return mixed
 	 * @throws Throwable
 	 */
-	protected function next(mixed $value = null): mixed
+	public function next(mixed $value = null): mixed
 	{
 		return Fiber::suspend($value);
 	}
@@ -194,21 +191,28 @@ class Loop
 	 */
 	public function cancel(int $id): void
 	{
-		if(isset($this->callables[$id])) {
+		if (isset($this->callables[$id])) {
 			unset($this->callables[$id]);
 		}
 	}
 
+	/**
+	 * @return string[]
+	 */
+	public function getErrors(): array
+	{
+		return $this->errors;
+	}
 
 	/**
 	 * @return void
 	 */
 	private function execCallables(): void
 	{
-		foreach($this->callables as $id => $fiber) {
+		foreach ($this->callables as $id => $fiber) {
 			try {
 				$this->call($id, $fiber);
-			} catch(Throwable $exception) {
+			} catch (Throwable $exception) {
 				$this->errors[$id] = $exception->getMessage();
 			}
 		}
@@ -223,14 +227,14 @@ class Loop
 	 */
 	protected function call(int $id, Fiber $fiber): mixed
 	{
-		if(!$fiber->isStarted()) {
+		if (!$fiber->isStarted()) {
 			return $fiber->start($id);
 		}
 
-		if(!$fiber->isTerminated()) {
+		if (!$fiber->isTerminated()) {
 			try {
 				return $fiber->resume();
-			} catch(Throwable $exception) {
+			} catch (Throwable $exception) {
 				$this->errors[$id] = $exception->getMessage();
 			}
 		}
@@ -246,7 +250,7 @@ class Loop
 	 */
 	public function run(): void
 	{
-		while(!empty($this->callables)) {
+		while (!empty($this->callables)) {
 			$this->execCallables();
 		}
 	}
