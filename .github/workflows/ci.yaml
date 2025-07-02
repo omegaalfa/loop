@@ -1,23 +1,27 @@
 name: 🧪 CI
+
 on:
   push:
     branches:
       - 'main'
   pull_request:
+
 jobs:
   tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         php: ["8.1"]
+
     name: ⚙️ Running test for PHP ${{ matrix.php }}
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Determine commit range
+      - name: 🧮 Determine commit range
         id: commit-range
         run: |
           git fetch --prune
@@ -27,26 +31,31 @@ jobs:
           echo "CURRENT_COMMIT=$CURRENT_COMMIT" >> $GITHUB_ENV
           echo "Debug: Commit range $LAST_COMMIT..$CURRENT_COMMIT"
 
-      - name: Check commit messages
+      - name: ✅ Check commit messages (Conventional Commits)
         id: commit-check
         run: |
-          COMMITS=$(git log --format='%s' "${LAST_COMMIT}..${CURRENT_COMMIT}")
+          # Ignora merge commits e captura mensagens
+          COMMITS=$(git log --format='%s' "${LAST_COMMIT}..${CURRENT_COMMIT}" | grep -v '^Merge pull request')
           echo "Debug: All commits in range:"
           echo "$COMMITS"
-          CONVENTIONAL_COMMITS=$(echo "$COMMITS" | grep -E '^(feat|fix|docs|style|refactor|test|build|perf|ci|chore|revert|merge|wip): ' || true)
+
+          # Aceita tipos com ou sem (scope):
+          CONVENTIONAL_COMMITS=$(echo "$COMMITS" | grep -E '^(feat|fix|docs|style|refactor|test|build|perf|ci|chore|revert|wip)(\([^)]+\))?: ' || true)
           echo "Debug: Conventional commits found:"
           echo "$CONVENTIONAL_COMMITS"
+
+          # Exporta como output
           echo "stdout<<EOF" >> $GITHUB_OUTPUT
           echo "$CONVENTIONAL_COMMITS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Verify commit messages
+      - name: 🕵️ Verify commit messages
         run: |
           echo "Debug: Commit check output: '${{ steps.commit-check.outputs.stdout }}'"
           if [ -n "${{ steps.commit-check.outputs.stdout }}" ]; then
-            echo "Commit messages are following Conventional Commits specification."
+            echo "✅ Commit messages are valid."
           else
-            echo "Some commit messages do not follow Conventional Commits specification."
+            echo "❌ Some commit messages do not follow Conventional Commits specification."
             git log --format='%s' "${LAST_COMMIT}..${CURRENT_COMMIT}"
             exit 1
           fi
